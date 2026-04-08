@@ -1,0 +1,124 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 1,
+        "title": "Calcada com piso irregular",
+        "category": "Infraestrutura",
+        "description": "Trecho com rachaduras e desnivel proximo ao Centro de Tecnologia.",
+        "locationName": "Acesso lateral do CT",
+        "status": "Aberto",
+        "severity": "Alta",
+        "reportedAt": "2026-03-20"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2318, -22.8625]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 2,
+        "title": "Poste apagado na avenida principal",
+        "category": "Iluminacao",
+        "description": "Iluminacao comprometida no trajeto entre a Reitoria e o RU central.",
+        "locationName": "Av. Pedro Calmon",
+        "status": "Em analise",
+        "severity": "Media",
+        "reportedAt": "2026-03-22"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2286, -22.8579]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 3,
+        "title": "Fluxo confuso de pedestres e bikes",
+        "category": "Mobilidade",
+        "description": "Cruzar a ciclovia e a faixa de pedestres esta gerando conflito em horario de pico.",
+        "locationName": "Entorno do CCMN",
+        "status": "Planejado",
+        "severity": "Media",
+        "reportedAt": "2026-03-18"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2362, -22.8608]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 4,
+        "title": "Ponto com baixa visibilidade",
+        "category": "Seguranca",
+        "description": "Vegetacao e iluminacao insuficiente reduzem a visibilidade no trecho noturno.",
+        "locationName": "Caminho entre CCS e estacionamento oeste",
+        "status": "Aberto",
+        "severity": "Alta",
+        "reportedAt": "2026-03-25"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2249, -22.8612]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 5,
+        "title": "Acumulo de residuos",
+        "category": "Limpeza",
+        "description": "Lixeira saturada e descarte irregular em area de convivencia.",
+        "locationName": "Praca proxima a Reitoria",
+        "status": "Em analise",
+        "severity": "Baixa",
+        "reportedAt": "2026-03-27"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2299, -22.8557]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 6,
+        "title": "Rampa bloqueada por mobiliario",
+        "category": "Acessibilidade",
+        "description": "A rota acessivel esta parcialmente ocupada por cones e cavaletes.",
+        "locationName": "Entrada do bloco F do CCMN",
+        "status": "Aberto",
+        "severity": "Alta",
+        "reportedAt": "2026-03-28"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2351, -22.8593]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": 7,
+        "title": "Buraco no estacionamento",
+        "category": "Infraestrutura",
+        "description": "Buraco superficial com risco para carros, bicicletas e pedestres.",
+        "locationName": "Estacionamento do CCS",
+        "status": "Aberto",
+        "severity": "Media",
+        "reportedAt": "2026-03-29"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-43.2227, -22.8594]
+      }
+    }
+  ]
+}

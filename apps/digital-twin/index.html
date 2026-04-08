@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Centro de Monitoramento UFRJ | Twin Spatial View</title>
+    <meta
+      name="description"
+      content="Twin espacial leve da Cidade Universitaria da UFRJ para monitoramento de ocorrencias e leitura 3D do campus."
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"
+    />
+    <link rel="stylesheet" href="./src/styles/main.css" />
+  </head>
+  <body>
+    <main id="map" aria-label="Mapa 3D da Cidade Universitaria da UFRJ"></main>
+    <div class="scene-overlay" aria-hidden="true"></div>
+
+    <aside class="sidebar" aria-label="Painel de operacao do campus">
+      <div class="sidebar-header">
+        <p class="eyebrow">Sistema urbano / campus inteligente</p>
+        <h1>Centro de monitoramento do campus</h1>
+        <p class="intro">
+          Leitura espacial 3D da Cidade Universitaria com foco em ocorrencias,
+          analise territorial e navegacao de demo publica.
+        </p>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Visualizacao operacional</h2>
+          <p id="visualization-helper" class="helper">
+            Alterne entre cena base, ocorrencias e leitura analitica do campus.
+          </p>
+        </div>
+
+        <div
+          id="mode-switcher"
+          class="mode-switcher"
+          role="group"
+          aria-label="Modo de visualizacao"
+        ></div>
+
+        <div class="field">
+          <span>Filtro por categoria</span>
+          <div
+            id="category-filters"
+            class="filter-chip-grid"
+            role="group"
+            aria-label="Filtro por categoria"
+          ></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Nova ocorrencia</h2>
+
+        <label class="field">
+          <span>Categoria</span>
+          <select id="category-select"></select>
+        </label>
+
+        <label class="field">
+          <div class="field-label-row">
+            <span>Descricao</span>
+            <small>Opcional</small>
+          </div>
+          <textarea
+            id="description-input"
+            rows="3"
+            maxlength="120"
+            placeholder="Ex.: Iluminacao instavel no acesso ao bloco."
+          ></textarea>
+        </label>
+
+        <div class="field-meta">
+          <span id="mode-status">Pronto para registrar uma ocorrencia.</span>
+          <span id="description-counter">0/120</span>
+        </div>
+
+        <button id="pin-toggle-button" class="primary-button" type="button">
+          Adicionar ocorrencia no mapa
+        </button>
+      </section>
+
+      <section class="panel">
+        <h2>Categorias monitoradas</h2>
+        <ul id="category-legend" class="legend-list"></ul>
+      </section>
+
+      <section class="panel panel-list" id="markings-panel">
+        <div class="panel-title-row">
+          <div class="panel-title-group">
+            <h2>Ocorrencias monitoradas</h2>
+            <span id="pin-count" class="pill">0</span>
+          </div>
+          <button
+            id="toggle-pin-list-button"
+            class="ghost-button"
+            type="button"
+            aria-controls="pin-list"
+            aria-expanded="true"
+          >
+            Esconder
+          </button>
+        </div>
+        <ul id="pin-list" class="pin-list"></ul>
+      </section>
+    </aside>
+
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
