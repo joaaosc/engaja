@@ -12,7 +12,7 @@
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"
     />
-    <link rel="stylesheet" href="./src/styles/main.css" />
+    <link rel="stylesheet" href="./src/styles/main.css?v=20260408b" />
   </head>
   <body>
     <main id="map" aria-label="Mapa 3D da Cidade Universitaria da UFRJ"></main>
@@ -76,12 +76,14 @@
         </label>
 
         <div class="field-meta">
-          <span id="mode-status">Pronto para registrar uma ocorrencia.</span>
+          <span id="mode-status">
+            Pronto para abrir um formulario de report. A descricao e opcional.
+          </span>
           <span id="description-counter">0/120</span>
         </div>
 
         <button id="pin-toggle-button" class="primary-button" type="button">
-          Adicionar ocorrencia no mapa
+          Selecionar ponto no mapa
         </button>
       </section>
 
@@ -90,27 +92,26 @@
         <ul id="category-legend" class="legend-list"></ul>
       </section>
 
-      <section class="panel panel-list" id="markings-panel">
-        <div class="panel-title-row">
-          <div class="panel-title-group">
-            <h2>Ocorrencias monitoradas</h2>
-            <span id="pin-count" class="pill">0</span>
-          </div>
-          <button
-            id="toggle-pin-list-button"
-            class="ghost-button"
-            type="button"
-            aria-controls="pin-list"
-            aria-expanded="true"
-          >
-            Esconder
-          </button>
+      <section class="panel dashboard-redirect-panel">
+        <div class="panel-heading">
+          <h2>Dashboard administrativo</h2>
+          <p class="helper">
+            Acesse a visao executiva com indicadores consolidados, fila priorizada e leitura
+            territorial do campus.
+          </p>
         </div>
-        <ul id="pin-list" class="pin-list"></ul>
+
+        <a
+          id="open-dashboard-button"
+          class="ghost-button dashboard-link-button"
+          href="../frontend/"
+        >
+          Abrir dashboard
+        </a>
       </section>
     </aside>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" src="./src/main.js?v=20260408b"></script>
   </body>
 </html>

@@ -10,10 +10,16 @@ import {
   ALL_CATEGORIES_FILTER,
   CAMPUS_BOUNDARY_URL,
   DEFAULT_VISUALIZATION_MODE,
+  REPORTS_API_URL,
   REPORTS_SEED_URL,
   TREE_MODEL_ASSET_URL,
   VISUALIZATION_MODES,
 } from "./config/runtime.js";
+import { createReportFormModal } from "./components/report-form-modal.js";
+import { createReportApiClient, ReportApiError } from "./features/reports/report-api-client.js";
+import { createReportClickFlow } from "./features/reports/report-click-flow.js";
+import { createLocalReportStore } from "./features/reports/report-local-store.js";
+import { reportRecordToMarkingFeature } from "./features/reports/report-marking-adapter.js";
 
 (() => {
   const BASE_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
@@ -318,17 +324,38 @@ import {
   const descriptionCounter = document.getElementById("description-counter");
   const modeStatus = document.getElementById("mode-status");
   const modeSwitcher = document.getElementById("mode-switcher");
-  const pinCount = document.getElementById("pin-count");
-  const pinList = document.getElementById("pin-list");
   const pinToggleButton = document.getElementById("pin-toggle-button");
   const sidebar = document.querySelector(".sidebar");
-  const togglePinListButton = document.getElementById("toggle-pin-list-button");
   const visualizationHelper = document.getElementById("visualization-helper");
-  const markingsPanel = document.getElementById("markings-panel");
+  const reportApiClient = createReportApiClient({
+    reportsApiUrl: REPORTS_API_URL,
+  });
+  const reportLocalStore = createLocalReportStore();
+  const reportFormModal = createReportFormModal({
+    categories: CATEGORIES,
+    maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
+    onSubmit: submitReportForm,
+    onClose: (reason) => {
+      if (reason !== "submitted") {
+        modeStatus.textContent =
+          "Pronto para abrir um formulario de report. A descricao e opcional.";
+      }
+    },
+  });
+  const reportClickFlow = createReportClickFlow({
+    buildDraftMarking,
+    closeActivePopup,
+    disablePlacementMode,
+    isPointInCampusArea,
+    reportFormModal,
+    setModeStatus(message) {
+      modeStatus.textContent = message;
+    },
+    syncCursor,
+  });
 
   const state = {
     isPlacementMode: false,
-    isListCollapsed: false,
     nextId: 1,
     visualizationMode: DEFAULT_VISUALIZATION_MODE,
     activeCategoryFilter: ALL_CATEGORIES_FILTER,
@@ -343,10 +370,8 @@ import {
   renderModeButtons();
   renderCategoryFilters();
   renderCategoryLegend();
-  renderMarkingsList();
   updateDescriptionCounter();
   updatePlacementUi();
-  updateMarkingsListVisibility();
   updateVisualizationHelper();
 
   descriptionInput.addEventListener("input", updateDescriptionCounter);
@@ -362,11 +387,6 @@ import {
     }
 
     enablePlacementMode();
-  });
-
-  togglePinListButton.addEventListener("click", () => {
-    state.isListCollapsed = !state.isListCollapsed;
-    updateMarkingsListVisibility();
   });
 
   map.addControl(
@@ -407,7 +427,7 @@ import {
       addCampusBoundaryLayers();
       bindMapInteractions();
       applyVisualizationMode();
-      await loadSeedReports();
+      await loadInitialReports();
     } catch (error) {
       console.error("Falha ao inicializar a cena do campus.", error);
       modeStatus.textContent = "Falha ao inicializar a cena do campus.";
@@ -820,53 +840,7 @@ import {
   }
 
   function handleMapPlacement(event) {
-    const draftMarking = buildDraftMarking();
-
-    if (!draftMarking) {
-      disablePlacementMode();
-      return;
-    }
-
-    const coordinates = [event.lngLat.lng, event.lngLat.lat];
-
-    if (!isPointInCampusArea(coordinates)) {
-      modeStatus.textContent =
-        "Fora do limite oficial da Cidade Universitaria. Escolha um ponto dentro do contorno.";
-      syncCursor("not-allowed");
-      return;
-    }
-
-    const feature = {
-      type: "Feature",
-      properties: {
-        id: String(state.nextId),
-        title: `Nova ocorrencia de ${draftMarking.category.label}`,
-        categoryId: draftMarking.category.id,
-        categoryLabel: draftMarking.category.label,
-        color: draftMarking.category.color,
-        description: draftMarking.description,
-        locationName: "Registro manual",
-        status: "Novo",
-        severity: "Media",
-        reportedAt: new Date().toISOString().slice(0, 10),
-      },
-      geometry: {
-        type: "Point",
-        coordinates,
-      },
-    };
-
-    state.nextId += 1;
-    state.markings.unshift(feature);
-
-    syncMarkingsSource();
-    renderCategoryFilters();
-    renderCategoryLegend();
-    renderMarkingsList();
-    applyVisualizationMode();
-    showPopupForMarking(feature);
-    resetDraft();
-    disablePlacementMode();
+    reportClickFlow.handleMapPlacementClick(event);
   }
 
   function addMarkingsSourceAndLayers() {
@@ -1169,7 +1143,6 @@ import {
     updateModeButtons();
     updateVisualizationHelper();
     renderCategoryFilters();
-    renderMarkingsList();
     syncCursor();
   }
 
@@ -4397,6 +4370,32 @@ import {
       )?.id;
   }
 
+  async function loadInitialReports() {
+    const apiFeatures = await loadReportsFromApi();
+    const localFeatures = loadReportsFromLocalStore();
+
+    if (apiFeatures) {
+      replaceMarkings(mergeMarkingFeatures(apiFeatures, localFeatures));
+      return;
+    }
+
+    const seedFeatures = await loadSeedReports();
+    replaceMarkings(mergeMarkingFeatures(seedFeatures, localFeatures));
+  }
+
+  async function loadReportsFromApi() {
+    try {
+      const reports = await reportApiClient.listReports();
+      return reports
+        .map(reportRecordToMarkingFeature)
+        .map(normalizeMarkingFeature)
+        .filter(Boolean);
+    } catch (error) {
+      console.warn("Nao foi possivel carregar os reports pela API. Voltando para o seed local.", error);
+      return null;
+    }
+  }
+
   async function loadSeedReports() {
     try {
       const response = await fetch(REPORTS_SEED_URL, { cache: "no-store" });
@@ -4410,25 +4409,29 @@ import {
         ? featureCollection.features.map(normalizeMarkingFeature).filter(Boolean)
         : [];
 
-      if (!features.length) {
-        return;
-      }
-
-      state.markings = features.sort(sortMarkingsByDateDesc);
-      state.nextId =
-        Math.max(
-          0,
-          ...state.markings.map((feature) => Number(feature.properties.id) || 0),
-        ) + 1;
-
-      syncMarkingsSource();
-      renderCategoryFilters();
-      renderCategoryLegend();
-      renderMarkingsList();
-      applyVisualizationMode();
+      return features;
     } catch (error) {
       console.warn("Nao foi possivel carregar os dados iniciais de ocorrencias.", error);
+      return [];
     }
+  }
+
+  async function submitReportForm(payload) {
+    try {
+      const createdReport = await reportApiClient.createReport(payload);
+      addCreatedReportToMap(createdReport);
+      modeStatus.textContent = "Report salvo com sucesso e adicionado no mapa.";
+      return;
+    } catch (error) {
+      if (!(error instanceof ReportApiError) || !error.isConnectionError) {
+        throw error;
+      }
+    }
+
+    const createdReport = reportLocalStore.createReport(payload);
+    addCreatedReportToMap(createdReport);
+    modeStatus.textContent =
+      "API indisponivel no momento. Report salvo localmente neste navegador.";
   }
 
   function normalizeMarkingFeature(feature) {
@@ -4508,6 +4511,81 @@ import {
     };
   }
 
+  function replaceMarkings(features) {
+    state.markings = features.slice().sort(sortMarkingsByDateDesc);
+    state.nextId =
+      Math.max(
+        0,
+        ...state.markings.map((feature) => Number(feature.properties.id) || 0),
+      ) + 1;
+
+    syncMarkingsSource();
+    renderCategoryFilters();
+    renderCategoryLegend();
+    applyVisualizationMode();
+  }
+
+  function loadReportsFromLocalStore() {
+    try {
+      return reportLocalStore
+        .listReports()
+        .map(reportRecordToMarkingFeature)
+        .map(normalizeMarkingFeature)
+        .filter(Boolean);
+    } catch (error) {
+      console.warn("Nao foi possivel carregar os reports salvos localmente.", error);
+      return [];
+    }
+  }
+
+  function addCreatedReportToMap(reportRecord) {
+    const createdFeature = normalizeMarkingFeature(reportRecordToMarkingFeature(reportRecord));
+
+    if (!createdFeature) {
+      throw new Error("O report salvo retornou um formato invalido para o mapa.");
+    }
+
+    appendMarkingFeature(createdFeature);
+    resetDraft();
+    showPopupForMarking(createdFeature);
+  }
+
+  function mergeMarkingFeatures(...featureGroups) {
+    const mergedFeatures = [];
+    const seenIds = new Set();
+
+    featureGroups.flat().forEach((feature) => {
+      if (!feature) {
+        return;
+      }
+
+      const featureId = String(feature.properties?.id ?? "");
+
+      if (featureId && seenIds.has(featureId)) {
+        return;
+      }
+
+      if (featureId) {
+        seenIds.add(featureId);
+      }
+
+      mergedFeatures.push(feature);
+    });
+
+    return mergedFeatures;
+  }
+
+  function appendMarkingFeature(feature) {
+    state.markings.unshift(feature);
+    state.nextId =
+      Math.max(state.nextId, Number(feature.properties.id) || 0) + 1;
+
+    syncMarkingsSource();
+    renderCategoryFilters();
+    renderCategoryLegend();
+    applyVisualizationMode();
+  }
+
   function enablePlacementMode() {
     state.isPlacementMode = true;
     updatePlacementUi();
@@ -4523,12 +4601,12 @@ import {
   function updatePlacementUi() {
     pinToggleButton.classList.toggle("is-placing", state.isPlacementMode);
     pinToggleButton.textContent = state.isPlacementMode
-      ? "Cancelar pinagem"
-      : "Adicionar ocorrencia no mapa";
+      ? "Cancelar selecao"
+      : "Selecionar ponto no mapa";
 
     modeStatus.textContent = state.isPlacementMode
-      ? "Clique em uma area do campus para posicionar a ocorrencia."
-      : "Pronto para registrar uma ocorrencia. A descricao e opcional.";
+      ? "Clique em uma area do campus para capturar as coordenadas do report."
+      : "Pronto para abrir um formulario de report. A descricao e opcional.";
   }
 
   function updateDescriptionCounter() {
@@ -4538,102 +4616,6 @@ import {
   function resetDraft() {
     descriptionInput.value = "";
     updateDescriptionCounter();
-  }
-
-  function renderMarkingsList() {
-    const visibleMarkings = getVisibleMarkingsForList();
-    pinCount.textContent = String(visibleMarkings.length);
-    pinList.innerHTML = "";
-
-    if (!visibleMarkings.length) {
-      const emptyState = document.createElement("li");
-      emptyState.className = "empty-state";
-      emptyState.textContent =
-        state.activeCategoryFilter === ALL_CATEGORIES_FILTER
-          ? "Nenhuma ocorrencia visivel no momento. Use o modo de ocorrencias ou registre um novo ponto no mapa."
-          : "Nenhuma ocorrencia encontrada para a categoria filtrada.";
-      pinList.appendChild(emptyState);
-      return;
-    }
-
-    visibleMarkings.forEach((feature) => {
-      const item = document.createElement("li");
-      item.className = "pin-item";
-
-      const header = document.createElement("div");
-      header.className = "pin-header";
-
-      const badge = document.createElement("div");
-      badge.className = "pin-badge";
-      badge.innerHTML = `
-        <span class="legend-swatch" style="background:${feature.properties.color}"></span>
-        ${escapeHtml(feature.properties.categoryLabel)}
-      `;
-
-      const status = document.createElement("span");
-      status.className = `status-pill status-pill--${getStatusTone(
-        feature.properties.status,
-        feature.properties.severity,
-      )}`;
-      status.textContent = feature.properties.status;
-
-      const title = document.createElement("p");
-      title.className = "pin-title";
-      title.textContent = feature.properties.title;
-
-      const description = document.createElement("p");
-      description.className = feature.properties.description
-        ? "pin-description"
-        : "pin-empty-description";
-      description.textContent = feature.properties.description || "Sem descricao adicional.";
-
-      const meta = document.createElement("p");
-      meta.className = "pin-meta";
-      meta.textContent = buildMarkingMeta(feature.properties, feature.geometry.coordinates);
-
-      const actions = document.createElement("div");
-      actions.className = "pin-actions";
-
-      const focusButton = document.createElement("button");
-      focusButton.className = "list-action";
-      focusButton.type = "button";
-      focusButton.textContent = "Focar";
-      focusButton.addEventListener("click", () => {
-        focusOnMarkings([feature], 760);
-        showPopupForMarking(feature);
-      });
-
-      const removeButton = document.createElement("button");
-      removeButton.className = "list-action list-action-danger";
-      removeButton.type = "button";
-      removeButton.textContent = "Remover";
-      removeButton.addEventListener("click", () => {
-        removeMarking(feature.properties.id);
-      });
-
-      header.append(badge, status);
-      actions.append(focusButton, removeButton);
-      item.append(header, title, description, meta, actions);
-      pinList.appendChild(item);
-    });
-  }
-
-  function updateMarkingsListVisibility() {
-    pinList.hidden = state.isListCollapsed;
-    markingsPanel.classList.toggle("is-collapsed", state.isListCollapsed);
-    togglePinListButton.textContent = state.isListCollapsed ? "Mostrar" : "Esconder";
-    togglePinListButton.setAttribute("aria-expanded", String(!state.isListCollapsed));
-  }
-
-  function removeMarking(markingId) {
-    state.markings = state.markings.filter(
-      (feature) => feature.properties.id !== String(markingId),
-    );
-    syncMarkingsSource();
-    renderCategoryFilters();
-    renderCategoryLegend();
-    renderMarkingsList();
-    applyVisualizationMode();
   }
 
   function syncMarkingsSource() {
@@ -4927,14 +4909,6 @@ import {
     return state.markings.filter(
       (feature) => feature.properties.categoryId === state.activeCategoryFilter,
     );
-  }
-
-  function getVisibleMarkingsForList() {
-    if (state.visualizationMode === "base") {
-      return [];
-    }
-
-    return getFilteredMarkings();
   }
 
   function getCategoryCounts() {

@@ -3,6 +3,8 @@ export const REPORTS_SEED_URL = new URL(
   "../../../../packages/reports-domain/seeds/reports.seed.geojson",
   import.meta.url,
 );
+export const REPORTS_API_URL =
+  globalThis.ENGAJA_REPORTS_API_URL ?? resolveDefaultReportsApiUrl();
 export const TREE_MODEL_ASSET_URL = new URL("../../assets/tree.gltf", import.meta.url).toString();
 
 export const VISUALIZATION_MODES = [
@@ -25,3 +27,15 @@ export const VISUALIZATION_MODES = [
 
 export const DEFAULT_VISUALIZATION_MODE = "occurrences";
 export const ALL_CATEGORIES_FILTER = "all";
+
+function resolveDefaultReportsApiUrl() {
+  const location = globalThis.location;
+
+  if (!location || !["http:", "https:"].includes(location.protocol)) {
+    return "http://127.0.0.1:3001/api/reports";
+  }
+
+  const apiUrl = new URL("/api/reports", location.origin);
+  apiUrl.port = "3001";
+  return apiUrl.toString();
+}

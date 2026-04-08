@@ -1,8 +1,15 @@
 # Frontend
 
-Diretorio reservado para a futura interface web transacional do produto.
+Diretorio da interface web administrativa do produto.
 
-Escopo esperado:
+No estado atual, contem uma demo estatica em `index.html` com dados mockados para:
+
+- dashboard administrativo
+- leitura executiva de reports
+- priorizacao operacional
+- apresentacao visual para pitch e PDF
+
+Escopo esperado para a evolucao desta frente:
 
 - autenticacao e sessao
 - dashboards e listagens
