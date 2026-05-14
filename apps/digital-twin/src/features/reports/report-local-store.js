@@ -75,13 +75,30 @@ function buildReportRecord(input, now) {
     categoryColor: category.color,
     description,
     locationName,
-    status: REPORT_DEFAULT_STATUS,
+    status: clampText(input?.status, 40) || REPORT_DEFAULT_STATUS,
     severity: REPORT_DEFAULT_SEVERITY,
     latitude,
     longitude,
     reportedAt: currentTimestamp.slice(0, 10),
     createdAt: currentTimestamp,
     updatedAt: currentTimestamp,
+    ...buildReportDetails(input),
+  };
+}
+
+function buildReportDetails(input) {
+  return {
+    reporterName: clampText(input?.reporterName, 80),
+    reporterDocument: clampText(input?.reporterDocument, 32),
+    reportBuilding: clampText(input?.reportBuilding, 40),
+    reportBlock: clampText(input?.reportBlock, 20),
+    reportFloor: clampText(input?.reportFloor, 20),
+    reportEnvironment: clampText(input?.reportEnvironment, 80),
+    reportProblem: clampText(input?.reportProblem, 80),
+    reportImageDataUrl: String(input?.reportImageDataUrl ?? ""),
+    reportImageName: clampText(input?.reportImageName, 120),
+    reportConfirmers: clampText(input?.reportConfirmers, 500),
+    reportConfirmersCount: Number(input?.reportConfirmersCount) || 0,
   };
 }
 

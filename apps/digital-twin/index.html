@@ -12,106 +12,194 @@
       rel="stylesheet"
       href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"
     />
-    <link rel="stylesheet" href="./src/styles/main.css?v=20260408b" />
+    <link rel="stylesheet" href="./src/styles/main.css?v=20260514b" />
   </head>
   <body>
     <main id="map" aria-label="Mapa 3D da Cidade Universitaria da UFRJ"></main>
     <div class="scene-overlay" aria-hidden="true"></div>
 
     <aside class="sidebar" aria-label="Painel de operacao do campus">
+      <div class="sidebar-grabber" aria-hidden="true"></div>
+
       <div class="sidebar-header">
-        <p class="eyebrow">Sistema urbano / campus inteligente</p>
-        <h1>Centro de monitoramento do campus</h1>
-        <p class="intro">
-          Leitura espacial 3D da Cidade Universitaria com foco em ocorrencias,
-          analise territorial e navegacao de demo publica.
+        <div class="sidebar-title-row">
+          <div class="sidebar-title-copy">
+            <p class="eyebrow">Digital twin</p>
+            <h1>Campus UFRJ</h1>
+          </div>
+
+          <button
+            id="sidebar-toggle-button"
+            class="sidebar-toggle-button"
+            type="button"
+            aria-controls="sidebar-content"
+            aria-expanded="true"
+          >
+            Ocultar
+          </button>
+        </div>
+
+        <p id="active-view-summary" class="active-view-summary">
+          Ocorrencias / Todas as categorias
         </p>
       </div>
 
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Visualizacao operacional</h2>
-          <p id="visualization-helper" class="helper">
-            Alterne entre cena base, ocorrencias e leitura analitica do campus.
-          </p>
-        </div>
-
-        <div
-          id="mode-switcher"
-          class="mode-switcher"
-          role="group"
-          aria-label="Modo de visualizacao"
-        ></div>
-
-        <div class="field">
-          <span>Filtro por categoria</span>
-          <div
-            id="category-filters"
-            class="filter-chip-grid"
-            role="group"
-            aria-label="Filtro por categoria"
-          ></div>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>Nova ocorrencia</h2>
-
-        <label class="field">
-          <span>Categoria</span>
-          <select id="category-select"></select>
-        </label>
-
-        <label class="field">
-          <div class="field-label-row">
-            <span>Descricao</span>
-            <small>Opcional</small>
+      <div id="sidebar-content" class="sidebar-content">
+        <section class="panel data-controls-panel">
+          <div class="panel-heading">
+            <h2>Dados</h2>
+            <p id="visualization-helper" class="helper">
+              Alterne a leitura do mapa e filtre as categorias ativas.
+            </p>
           </div>
-          <textarea
-            id="description-input"
-            rows="3"
-            maxlength="120"
-            placeholder="Ex.: Iluminacao instavel no acesso ao bloco."
-          ></textarea>
-        </label>
 
-        <div class="field-meta">
-          <span id="mode-status">
-            Pronto para abrir um formulario de report. A descricao e opcional.
-          </span>
-          <span id="description-counter">0/120</span>
-        </div>
+          <div class="control-group">
+            <span class="control-label">Visualizacao</span>
+            <div
+              id="mode-switcher"
+              class="mode-switcher"
+              role="group"
+              aria-label="Modo de visualizacao"
+            ></div>
+          </div>
 
-        <button id="pin-toggle-button" class="primary-button" type="button">
-          Selecionar ponto no mapa
-        </button>
-      </section>
+          <div class="field filter-field">
+            <span>Categorias</span>
+            <div
+              id="category-filters"
+              class="filter-chip-grid"
+              role="group"
+              aria-label="Filtro por categoria"
+            ></div>
+          </div>
+        </section>
 
-      <section class="panel">
-        <h2>Categorias monitoradas</h2>
-        <ul id="category-legend" class="legend-list"></ul>
-      </section>
+        <section class="panel report-panel">
+          <h2>Reportar problema</h2>
 
-      <section class="panel dashboard-redirect-panel">
-        <div class="panel-heading">
-          <h2>Dashboard administrativo</h2>
-          <p class="helper">
-            Acesse a visao executiva com indicadores consolidados, fila priorizada e leitura
-            territorial do campus.
-          </p>
-        </div>
+          <button
+            id="pin-toggle-button"
+            class="primary-button"
+            type="button"
+            aria-expanded="false"
+            aria-controls="report-dropdown"
+          >
+            Reportar
+          </button>
 
-        <a
-          id="open-dashboard-button"
-          class="ghost-button dashboard-link-button"
-          href="../frontend/"
-        >
-          Abrir dashboard
-        </a>
-      </section>
+          <div id="report-dropdown" class="report-dropdown" hidden>
+            <form id="report-menu-form" class="report-menu-form">
+              <div class="report-menu-grid">
+                <label class="field">
+                  <span>Reportante</span>
+                  <input
+                    id="report-reporter-input"
+                    type="text"
+                    value="Mariana Costa"
+                  />
+                </label>
+
+                <label class="field">
+                  <span>DRE/SIAPE/CPF</span>
+                  <input
+                    id="report-document-input"
+                    type="text"
+                    inputmode="numeric"
+                    value="118204937"
+                  />
+                </label>
+              </div>
+
+              <div class="report-subsection">
+                <h3>Localizacao</h3>
+
+                <label class="field">
+                  <span>Predio/Unidade</span>
+                  <select id="report-building-select">
+                    <option value="CT">CT</option>
+                    <option value="CCS">CCS</option>
+                    <option value="CCMN">CCMN</option>
+                    <option value="CLA">CLA</option>
+                    <option value="Reitoria">Reitoria</option>
+                  </select>
+                </label>
+
+                <div class="report-menu-grid">
+                  <label class="field">
+                    <span>Bloco</span>
+                    <select id="report-block-select">
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="N1">N1</option>
+                      <option value="N2">N2</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Andar</span>
+                    <select id="report-floor-select">
+                      <option value="Terreo">Terreo</option>
+                      <option value="1º">1º</option>
+                      <option value="2º" selected>2º</option>
+                      <option value="3º">3º</option>
+                      <option value="4º">4º</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label class="field">
+                  <span>Ambiente</span>
+                  <select id="report-environment-select">
+                    <option value="Sala 200">Sala 200</option>
+                    <option value="Sala 214">Sala 214</option>
+                    <option value="Laboratorio">Laboratorio</option>
+                    <option value="Banheiro Masc" selected>Banheiro Masc</option>
+                    <option value="Banheiro Fem">Banheiro Fem</option>
+                    <option value="Corredor">Corredor</option>
+                  </select>
+                </label>
+
+                <label class="field">
+                  <span>Problema</span>
+                  <select id="report-problem-select">
+                    <option value="Torneira quebrada">Torneira quebrada</option>
+                    <option value="Vaso entupido" selected>Vaso entupido</option>
+                    <option value="Vazamento">Vazamento</option>
+                    <option value="Infiltracao">Infiltracao</option>
+                    <option value="Lampada queimada">Lampada queimada</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="report-subsection">
+                <label class="field">
+                  <span>Situacao do chamado</span>
+                  <select id="report-status-select">
+                    <option value="Enviado">Enviado</option>
+                    <option value="Em analise">Em analise</option>
+                    <option value="Aberto" selected>Aberto</option>
+                    <option value="Concluido">Concluido</option>
+                  </select>
+                </label>
+
+                <label class="field image-field">
+                  <span>Imagem do problema</span>
+                  <input id="report-image-input" type="file" accept="image/*" />
+                  <small id="report-image-name">Nenhuma imagem adicionada</small>
+                </label>
+              </div>
+
+              <button id="pin-report-button" class="secondary-button" type="button">
+                Pinar no mapa
+              </button>
+            </form>
+          </div>
+        </section>
+      </div>
     </aside>
 
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-    <script type="module" src="./src/main.js?v=20260408b"></script>
+    <script type="module" src="./src/main.js?v=20260514b"></script>
   </body>
 </html>

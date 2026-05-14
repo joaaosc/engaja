@@ -15,9 +15,7 @@ import {
   TREE_MODEL_ASSET_URL,
   VISUALIZATION_MODES,
 } from "./config/runtime.js";
-import { createReportFormModal } from "./components/report-form-modal.js";
-import { createReportApiClient, ReportApiError } from "./features/reports/report-api-client.js";
-import { createReportClickFlow } from "./features/reports/report-click-flow.js";
+import { createReportApiClient } from "./features/reports/report-api-client.js";
 import { createLocalReportStore } from "./features/reports/report-local-store.js";
 import { reportRecordToMarkingFeature } from "./features/reports/report-marking-adapter.js";
 
@@ -199,6 +197,18 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
   };
 
   const CATEGORIES = REPORT_CATEGORIES;
+  const REPORT_CONFIRMERS = [
+    "Ana Martins",
+    "Bruno Almeida",
+    "Carla Nunes",
+    "Daniel Ribeiro",
+    "Eduardo Souza",
+    "Fernanda Lima",
+    "Gustavo Rocha",
+    "Helena Torres",
+    "Isabela Pereira",
+    "Joao da Silva",
+  ];
 
   const MAP_SOURCE_IDS = {
     markings: "campus-markings",
@@ -317,45 +327,39 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     renderWorldCopies: false,
   });
 
-  const categorySelect = document.getElementById("category-select");
   const categoryFilters = document.getElementById("category-filters");
-  const categoryLegend = document.getElementById("category-legend");
-  const descriptionInput = document.getElementById("description-input");
-  const descriptionCounter = document.getElementById("description-counter");
-  const modeStatus = document.getElementById("mode-status");
   const modeSwitcher = document.getElementById("mode-switcher");
   const pinToggleButton = document.getElementById("pin-toggle-button");
+  const reportDropdown = document.getElementById("report-dropdown");
+  const reportForm = document.getElementById("report-menu-form");
+  const reportReporterInput = document.getElementById("report-reporter-input");
+  const reportDocumentInput = document.getElementById("report-document-input");
+  const reportBuildingSelect = document.getElementById("report-building-select");
+  const reportBlockSelect = document.getElementById("report-block-select");
+  const reportFloorSelect = document.getElementById("report-floor-select");
+  const reportEnvironmentSelect = document.getElementById("report-environment-select");
+  const reportProblemSelect = document.getElementById("report-problem-select");
+  const reportStatusSelect = document.getElementById("report-status-select");
+  const reportImageInput = document.getElementById("report-image-input");
+  const reportImageName = document.getElementById("report-image-name");
+  const pinReportButton = document.getElementById("pin-report-button");
   const sidebar = document.querySelector(".sidebar");
+  const sidebarContent = document.getElementById("sidebar-content");
+  const sidebarToggleButton = document.getElementById("sidebar-toggle-button");
+  const activeViewSummary = document.getElementById("active-view-summary");
   const visualizationHelper = document.getElementById("visualization-helper");
+  const compactSidebarMedia =
+    typeof globalThis.matchMedia === "function"
+      ? globalThis.matchMedia("(max-width: 640px)")
+      : null;
+  let hasUserChangedSidebarVisibility = false;
   const reportApiClient = createReportApiClient({
     reportsApiUrl: REPORTS_API_URL,
   });
   const reportLocalStore = createLocalReportStore();
-  const reportFormModal = createReportFormModal({
-    categories: CATEGORIES,
-    maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-    onSubmit: submitReportForm,
-    onClose: (reason) => {
-      if (reason !== "submitted") {
-        modeStatus.textContent =
-          "Pronto para abrir um formulario de report. A descricao e opcional.";
-      }
-    },
-  });
-  const reportClickFlow = createReportClickFlow({
-    buildDraftMarking,
-    closeActivePopup,
-    disablePlacementMode,
-    isPointInCampusArea,
-    reportFormModal,
-    setModeStatus(message) {
-      modeStatus.textContent = message;
-    },
-    syncCursor,
-  });
 
   const state = {
-    isPlacementMode: false,
+    isReportPlacementMode: false,
     nextId: 1,
     visualizationMode: DEFAULT_VISUALIZATION_MODE,
     activeCategoryFilter: ALL_CATEGORIES_FILTER,
@@ -363,31 +367,46 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     hoveredBuildingFingerprint: null,
     selectedBuildingFingerprint: null,
     campusBoundary: null,
+    pendingReportDraft: null,
+    reportImageDataUrl: "",
+    reportImageName: "",
     isSoftRecenteringCamera: false,
     isTreeModelRefreshPending: false,
   };
-  populateCategorySelect();
   renderModeButtons();
   renderCategoryFilters();
-  renderCategoryLegend();
-  updateDescriptionCounter();
-  updatePlacementUi();
+  initializeReportDropdown();
   updateVisualizationHelper();
+  const shouldOpenReportPanel = globalThis.location?.hash === "#reportar";
+  setSidebarCollapsed(Boolean(compactSidebarMedia?.matches) && !shouldOpenReportPanel);
+  if (shouldOpenReportPanel) {
+    setReportDropdownOpen(true);
+  }
+  syncSidebarMetrics();
 
-  descriptionInput.addEventListener("input", updateDescriptionCounter);
-
-  pinToggleButton.addEventListener("click", () => {
-    if (state.isPlacementMode) {
-      disablePlacementMode();
-      return;
-    }
-
-    if (!buildDraftMarking()) {
-      return;
-    }
-
-    enablePlacementMode();
+  sidebarToggleButton.addEventListener("click", () => {
+    hasUserChangedSidebarVisibility = true;
+    setSidebarCollapsed(!sidebar.classList.contains("is-collapsed"));
   });
+
+  if (compactSidebarMedia) {
+    const handleCompactSidebarChange = (event) => {
+      if (!hasUserChangedSidebarVisibility) {
+        setSidebarCollapsed(event.matches);
+      }
+    };
+
+    if (typeof compactSidebarMedia.addEventListener === "function") {
+      compactSidebarMedia.addEventListener("change", handleCompactSidebarChange);
+    } else if (typeof compactSidebarMedia.addListener === "function") {
+      compactSidebarMedia.addListener(handleCompactSidebarChange);
+    }
+  }
+
+  globalThis.addEventListener("resize", queueSidebarMetricsSync);
+  globalThis.addEventListener("orientationchange", queueSidebarMetricsSync);
+
+  pinToggleButton.addEventListener("click", toggleReportDropdown);
 
   map.addControl(
     new maplibregl.NavigationControl({
@@ -430,7 +449,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
       await loadInitialReports();
     } catch (error) {
       console.error("Falha ao inicializar a cena do campus.", error);
-      modeStatus.textContent = "Falha ao inicializar a cena do campus.";
+      activeViewSummary.textContent = "Falha ao inicializar a cena do campus.";
     }
   });
 
@@ -653,12 +672,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     };
   }
 
-  function populateCategorySelect() {
-    categorySelect.innerHTML = CATEGORIES.map(
-      (category) => `<option value="${category.id}">${category.label}</option>`,
-    ).join("");
-  }
-
   function renderModeButtons() {
     modeSwitcher.innerHTML = "";
 
@@ -726,39 +739,172 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
 
       categoryFilters.appendChild(button);
     });
+
+    queueSidebarMetricsSync();
   }
 
-  function renderCategoryLegend() {
-    const counts = getCategoryCounts();
-    categoryLegend.innerHTML = "";
-
-    CATEGORIES.forEach((category) => {
-      const item = document.createElement("li");
-      item.className = "legend-item";
-
-      const label = document.createElement("span");
-      label.className = "legend-label";
-      label.innerHTML = `
-        <span class="legend-swatch" style="background:${category.color}"></span>
-        ${escapeHtml(category.label)}
-      `;
-
-      const count = document.createElement("span");
-      count.className = "legend-count";
-      count.textContent = String(counts.get(category.id) ?? 0);
-
-      item.append(label, count);
-      categoryLegend.appendChild(item);
+  function initializeReportDropdown() {
+    reportForm.addEventListener("submit", (event) => {
+      event.preventDefault();
     });
+
+    reportForm
+      .querySelectorAll("input:not([type='file']), select")
+      .forEach((control) => {
+        control.addEventListener("input", syncReportFormState);
+        control.addEventListener("change", syncReportFormState);
+      });
+
+    reportImageInput.addEventListener("change", handleReportImageChange);
+    pinReportButton.addEventListener("click", startReportPlacement);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !reportDropdown.hidden) {
+        setReportDropdownOpen(false);
+      }
+
+      if (event.key === "Escape" && state.isReportPlacementMode) {
+        cancelReportPlacement();
+      }
+    });
+
+    syncReportFormState();
+  }
+
+  function toggleReportDropdown() {
+    if (state.isReportPlacementMode) {
+      cancelReportPlacement();
+      return;
+    }
+
+    setReportDropdownOpen(reportDropdown.hidden);
+  }
+
+  function setReportDropdownOpen(isOpen) {
+    reportDropdown.hidden = !isOpen;
+    sidebar.classList.toggle("is-reporting", isOpen);
+    pinToggleButton.classList.toggle("is-open", isOpen);
+    pinToggleButton.setAttribute("aria-expanded", String(isOpen));
+
+    queueSidebarMetricsSync();
+  }
+
+  function syncReportFormState() {
+    pinReportButton.disabled = state.isReportPlacementMode;
+  }
+
+  function startReportPlacement() {
+    state.pendingReportDraft = buildReportDraft();
+    state.isReportPlacementMode = true;
+    pinReportButton.disabled = true;
+    pinReportButton.textContent = "Clique no mapa";
+    pinReportButton.classList.add("is-placing");
+    pinToggleButton.textContent = "Cancelar pino";
+    activeViewSummary.textContent = "Clique no mapa para posicionar o report";
+    setReportDropdownOpen(false);
+    syncCursor("crosshair");
+    queueSidebarMetricsSync();
+  }
+
+  function cancelReportPlacement() {
+    state.isReportPlacementMode = false;
+    state.pendingReportDraft = null;
+    pinReportButton.disabled = false;
+    pinReportButton.textContent = "Pinar no mapa";
+    pinReportButton.classList.remove("is-placing");
+    pinToggleButton.textContent = "Reportar";
+    updateVisualizationHelper();
+    syncCursor("");
+    queueSidebarMetricsSync();
+  }
+
+  function buildReportDraft() {
+    const reporter = reportReporterInput.value.trim() || "Sem identificacao";
+    const documentId = reportDocumentInput.value.trim() || "Nao informado";
+    const floor = getControlValue(reportFloorSelect);
+    const floorLabel = floor === "Terreo" ? "Terreo," : `${floor} andar,`;
+    const building = getControlValue(reportBuildingSelect);
+    const block = getControlValue(reportBlockSelect);
+    const environment = getControlValue(reportEnvironmentSelect);
+    const problem = getControlValue(reportProblemSelect);
+    const status = getControlValue(reportStatusSelect);
+    const location = [
+      getControlValue(reportBuildingSelect),
+      `Bloco ${block}`,
+      floorLabel,
+      environment,
+    ].join(" ");
+
+    return {
+      reporter,
+      documentId,
+      building,
+      block,
+      floor,
+      environment,
+      problem,
+      status,
+      location,
+      category: resolveReportCategoryForProblem(problem),
+      imageDataUrl: state.reportImageDataUrl,
+      imageName: state.reportImageName,
+      confirmers: REPORT_CONFIRMERS.slice(),
+    };
+  }
+
+  function getControlValue(control) {
+    return control?.value?.trim() ?? "";
+  }
+
+  function resolveReportCategoryForProblem(problem) {
+    const normalizedProblem = slugify(problem);
+
+    if (normalizedProblem.includes("lampada")) {
+      return categoryById.get("iluminacao");
+    }
+
+    if (
+      normalizedProblem.includes("entupido") ||
+      normalizedProblem.includes("vazamento") ||
+      normalizedProblem.includes("torneira")
+    ) {
+      return categoryById.get("limpeza") ?? CATEGORIES[0];
+    }
+
+    return categoryById.get("infraestrutura") ?? CATEGORIES[0];
+  }
+
+  function handleReportImageChange() {
+    const file = reportImageInput.files?.[0] ?? null;
+
+    if (!file) {
+      state.reportImageDataUrl = "";
+      state.reportImageName = "";
+      reportImageName.textContent = "Nenhuma imagem adicionada";
+      return;
+    }
+
+    state.reportImageName = file.name;
+    reportImageName.textContent = file.name;
+
+    if (!file.type.startsWith("image/") || typeof FileReader === "undefined") {
+      state.reportImageDataUrl = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      state.reportImageDataUrl =
+        typeof reader.result === "string" ? reader.result : "";
+    });
+    reader.readAsDataURL(file);
   }
 
   function bindMapInteractions() {
     map.on("click", handleMapClick);
     map.on("mousemove", handleMapPointerMove);
     map.on("mouseout", () => {
-      if (!state.isPlacementMode) {
-        clearHoveredBuilding();
-      }
+      clearHoveredBuilding();
       syncCursor();
     });
   }
@@ -767,9 +913,9 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     const clickCoordinates = [event.lngLat.lng, event.lngLat.lat];
 
     if (!isPointInCampusArea(clickCoordinates)) {
-      if (state.isPlacementMode) {
-        modeStatus.textContent =
-          "Fora do limite oficial da Cidade Universitaria. Clique dentro do contorno do Fundao.";
+      if (state.isReportPlacementMode) {
+        activeViewSummary.textContent =
+          "Escolha um ponto dentro da Cidade Universitaria";
         syncCursor("not-allowed");
       }
 
@@ -777,8 +923,8 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
       return;
     }
 
-    if (state.isPlacementMode) {
-      handleMapPlacement(event);
+    if (state.isReportPlacementMode) {
+      createReportPinFromMapClick(event);
       return;
     }
 
@@ -809,11 +955,11 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
 
     if (!isPointInCampusArea(pointerCoordinates)) {
       clearHoveredBuilding();
-      syncCursor(state.isPlacementMode ? "not-allowed" : "");
+      syncCursor(state.isReportPlacementMode ? "not-allowed" : "");
       return;
     }
 
-    if (state.isPlacementMode) {
+    if (state.isReportPlacementMode) {
       clearHoveredBuilding();
       syncCursor("crosshair");
       return;
@@ -839,8 +985,105 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     syncCursor("");
   }
 
-  function handleMapPlacement(event) {
-    reportClickFlow.handleMapPlacementClick(event);
+  function createReportPinFromMapClick(event) {
+    const draft = state.pendingReportDraft ?? buildReportDraft();
+    const coordinates = [event.lngLat.lng, event.lngLat.lat];
+    const createdFeature = createStoredReportFeature(draft, coordinates);
+
+    appendMarkingFeature(createdFeature);
+    cancelReportPlacement();
+    setReportDropdownOpen(false);
+    setVisualizationMode("occurrences");
+    closeActivePopup();
+    showPopupForMarking(createdFeature);
+    focusOnMarkings([createdFeature], 700);
+    activeViewSummary.textContent = "Report pinado no mapa";
+  }
+
+  function createStoredReportFeature(draft, coordinates) {
+    try {
+      const reportRecord = reportLocalStore.createReport(
+        buildReportStoragePayload(draft, coordinates),
+      );
+      const storedFeature = normalizeMarkingFeature(
+        reportRecordToMarkingFeature(reportRecord),
+      );
+
+      if (storedFeature) {
+        return storedFeature;
+      }
+    } catch (error) {
+      console.warn("Nao foi possivel salvar o report localmente.", error);
+    }
+
+    return buildReportFeatureFromDraft(draft, coordinates);
+  }
+
+  function buildReportStoragePayload(draft, coordinates) {
+    const description = `${draft.problem} em ${draft.location}`.slice(
+      0,
+      MAX_DESCRIPTION_LENGTH,
+    );
+
+    return {
+      title: draft.problem,
+      categoryId: draft.category.id,
+      description,
+      locationName: draft.location,
+      latitude: coordinates[1],
+      longitude: coordinates[0],
+      status: draft.status,
+      reporterName: draft.reporter,
+      reporterDocument: draft.documentId,
+      reportBuilding: draft.building,
+      reportBlock: draft.block,
+      reportFloor: draft.floor,
+      reportEnvironment: draft.environment,
+      reportProblem: draft.problem,
+      reportImageDataUrl: draft.imageDataUrl,
+      reportImageName: draft.imageName,
+      reportConfirmers: draft.confirmers.join(", "),
+      reportConfirmersCount: draft.confirmers.length,
+    };
+  }
+
+  function buildReportFeatureFromDraft(draft, coordinates) {
+    const category = draft.category ?? CATEGORIES[0];
+    const reportedAt = new Date().toISOString().slice(0, 10);
+
+    return {
+      type: "Feature",
+      properties: {
+        id: cryptoRandomId(),
+        title: draft.problem,
+        categoryId: category.id,
+        categoryLabel: category.label,
+        color: category.color,
+        description: `${draft.problem} em ${draft.location}`.slice(
+          0,
+          MAX_DESCRIPTION_LENGTH,
+        ),
+        locationName: draft.location,
+        status: draft.status,
+        severity: "Media",
+        reportedAt,
+        reporterName: draft.reporter,
+        reporterDocument: draft.documentId,
+        reportBuilding: draft.building,
+        reportBlock: draft.block,
+        reportFloor: draft.floor,
+        reportEnvironment: draft.environment,
+        reportProblem: draft.problem,
+        reportImageDataUrl: draft.imageDataUrl,
+        reportImageName: draft.imageName,
+        reportConfirmers: draft.confirmers.join(", "),
+        reportConfirmersCount: draft.confirmers.length,
+      },
+      geometry: {
+        type: "Point",
+        coordinates,
+      },
+    };
   }
 
   function addMarkingsSourceAndLayers() {
@@ -1223,7 +1466,45 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
         ? "todas as categorias"
         : categoryById.get(state.activeCategoryFilter)?.label ?? "categoria ativa";
 
-    visualizationHelper.textContent = `${mode?.helper ?? ""} Filtro atual: ${categoryLabel}.`;
+    visualizationHelper.textContent = `${mode?.helper ?? ""} Filtro: ${categoryLabel}.`;
+    updateActiveViewSummary(mode?.label ?? "Visualizacao", categoryLabel);
+  }
+
+  function updateActiveViewSummary(modeLabel, categoryLabel) {
+    const formattedCategory =
+      state.activeCategoryFilter === ALL_CATEGORIES_FILTER
+        ? "Todas as categorias"
+        : categoryLabel;
+    activeViewSummary.textContent = `${modeLabel} / ${formattedCategory}`;
+  }
+
+  function setSidebarCollapsed(isCollapsed) {
+    sidebar.classList.toggle("is-collapsed", isCollapsed);
+    sidebarContent.hidden = isCollapsed;
+    sidebarToggleButton.textContent = isCollapsed ? "Mostrar" : "Ocultar";
+    sidebarToggleButton.setAttribute("aria-expanded", String(!isCollapsed));
+    sidebarToggleButton.setAttribute(
+      "aria-label",
+      isCollapsed ? "Mostrar controles do mapa" : "Ocultar controles do mapa",
+    );
+    queueSidebarMetricsSync();
+  }
+
+  function queueSidebarMetricsSync() {
+    if (typeof globalThis.requestAnimationFrame === "function") {
+      globalThis.requestAnimationFrame(syncSidebarMetrics);
+      return;
+    }
+
+    syncSidebarMetrics();
+  }
+
+  function syncSidebarMetrics() {
+    const sidebarRect = sidebar.getBoundingClientRect();
+    document.documentElement.style.setProperty(
+      "--sidebar-clearance-bottom",
+      `${Math.round(sidebarRect.height + 18)}px`,
+    );
   }
 
   function lockMapToCidadeUniversitaria() {
@@ -1358,9 +1639,9 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
 
     if (isCompactLayout) {
       return {
-        top: Math.round(sidebarRect.height + 20),
+        top: basePadding,
         right: basePadding,
-        bottom: 24,
+        bottom: Math.round(sidebarRect.height + 28),
         left: basePadding,
       };
     }
@@ -1428,7 +1709,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
       return;
     }
 
-    if (state.isPlacementMode) {
+    if (state.isReportPlacementMode) {
       map.getCanvas().style.cursor = "crosshair";
       return;
     }
@@ -4416,24 +4697,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     }
   }
 
-  async function submitReportForm(payload) {
-    try {
-      const createdReport = await reportApiClient.createReport(payload);
-      addCreatedReportToMap(createdReport);
-      modeStatus.textContent = "Report salvo com sucesso e adicionado no mapa.";
-      return;
-    } catch (error) {
-      if (!(error instanceof ReportApiError) || !error.isConnectionError) {
-        throw error;
-      }
-    }
-
-    const createdReport = reportLocalStore.createReport(payload);
-    addCreatedReportToMap(createdReport);
-    modeStatus.textContent =
-      "API indisponivel no momento. Report salvo localmente neste navegador.";
-  }
-
   function normalizeMarkingFeature(feature) {
     if (!feature || feature.geometry?.type !== "Point") {
       return null;
@@ -4476,6 +4739,17 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
         status: normalizeStatus(feature.properties?.status),
         severity: normalizeSeverity(feature.properties?.severity),
         reportedAt: normalizeDate(feature.properties?.reportedAt ?? feature.properties?.createdAt),
+        reporterName: String(feature.properties?.reporterName ?? "").trim(),
+        reporterDocument: String(feature.properties?.reporterDocument ?? "").trim(),
+        reportBuilding: String(feature.properties?.reportBuilding ?? "").trim(),
+        reportBlock: String(feature.properties?.reportBlock ?? "").trim(),
+        reportFloor: String(feature.properties?.reportFloor ?? "").trim(),
+        reportEnvironment: String(feature.properties?.reportEnvironment ?? "").trim(),
+        reportProblem: String(feature.properties?.reportProblem ?? "").trim(),
+        reportImageDataUrl: String(feature.properties?.reportImageDataUrl ?? ""),
+        reportImageName: String(feature.properties?.reportImageName ?? "").trim(),
+        reportConfirmers: String(feature.properties?.reportConfirmers ?? "").trim(),
+        reportConfirmersCount: Number(feature.properties?.reportConfirmersCount) || 0,
       },
       geometry: {
         type: "Point",
@@ -4498,19 +4772,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     return null;
   }
 
-  function buildDraftMarking() {
-    const category = categoryById.get(categorySelect.value);
-
-    if (!category) {
-      return null;
-    }
-
-    return {
-      category,
-      description: descriptionInput.value.trim().slice(0, MAX_DESCRIPTION_LENGTH),
-    };
-  }
-
   function replaceMarkings(features) {
     state.markings = features.slice().sort(sortMarkingsByDateDesc);
     state.nextId =
@@ -4521,7 +4782,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
 
     syncMarkingsSource();
     renderCategoryFilters();
-    renderCategoryLegend();
     applyVisualizationMode();
   }
 
@@ -4536,18 +4796,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
       console.warn("Nao foi possivel carregar os reports salvos localmente.", error);
       return [];
     }
-  }
-
-  function addCreatedReportToMap(reportRecord) {
-    const createdFeature = normalizeMarkingFeature(reportRecordToMarkingFeature(reportRecord));
-
-    if (!createdFeature) {
-      throw new Error("O report salvo retornou um formato invalido para o mapa.");
-    }
-
-    appendMarkingFeature(createdFeature);
-    resetDraft();
-    showPopupForMarking(createdFeature);
   }
 
   function mergeMarkingFeatures(...featureGroups) {
@@ -4582,40 +4830,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
 
     syncMarkingsSource();
     renderCategoryFilters();
-    renderCategoryLegend();
     applyVisualizationMode();
-  }
-
-  function enablePlacementMode() {
-    state.isPlacementMode = true;
-    updatePlacementUi();
-    syncCursor("crosshair");
-  }
-
-  function disablePlacementMode() {
-    state.isPlacementMode = false;
-    updatePlacementUi();
-    syncCursor("");
-  }
-
-  function updatePlacementUi() {
-    pinToggleButton.classList.toggle("is-placing", state.isPlacementMode);
-    pinToggleButton.textContent = state.isPlacementMode
-      ? "Cancelar selecao"
-      : "Selecionar ponto no mapa";
-
-    modeStatus.textContent = state.isPlacementMode
-      ? "Clique em uma area do campus para capturar as coordenadas do report."
-      : "Pronto para abrir um formulario de report. A descricao e opcional.";
-  }
-
-  function updateDescriptionCounter() {
-    descriptionCounter.textContent = `${descriptionInput.value.length}/${MAX_DESCRIPTION_LENGTH}`;
-  }
-
-  function resetDraft() {
-    descriptionInput.value = "";
-    updateDescriptionCounter();
   }
 
   function syncMarkingsSource() {
@@ -4647,6 +4862,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     const descriptionMarkup = properties.description
       ? `<p class="popup-copy">${escapeHtml(properties.description)}</p>`
       : `<p class="popup-copy popup-copy--muted">Sem descricao adicional.</p>`;
+    const reportMarkup = buildProblemReportPopupMarkup(properties);
 
     return `
       <div class="monitor-popup">
@@ -4663,9 +4879,61 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
           </span>
         </div>
         <h3 class="popup-title">${escapeHtml(properties.title)}</h3>
-        ${descriptionMarkup}
+        ${reportMarkup || descriptionMarkup}
         <p class="popup-meta">${escapeHtml(buildMarkingMeta(properties, coordinates))}</p>
       </div>
+    `;
+  }
+
+  function buildProblemReportPopupMarkup(properties) {
+    if (!properties.reportProblem && !properties.reporterName) {
+      return "";
+    }
+
+    const confirmers = String(properties.reportConfirmers ?? "").trim();
+    const imageMarkup =
+      typeof properties.reportImageDataUrl === "string" &&
+      properties.reportImageDataUrl.startsWith("data:image/")
+        ? `
+          <figure class="popup-report-image">
+            <img
+              src="${escapeHtml(properties.reportImageDataUrl)}"
+              alt="${escapeHtml(properties.reportImageName || "Imagem do problema")}"
+            />
+          </figure>
+        `
+        : "";
+
+    return `
+      <section class="popup-report-card">
+        <h4>Problema Reportado</h4>
+        <dl class="popup-report-list">
+          <div>
+            <dt>Reportante</dt>
+            <dd>${escapeHtml(properties.reporterName || "Nao informado")}</dd>
+          </div>
+          <div>
+            <dt>Localizacao</dt>
+            <dd>${escapeHtml(properties.locationName || "Nao informada")}</dd>
+          </div>
+          <div>
+            <dt>Problema</dt>
+            <dd>${escapeHtml(properties.reportProblem || properties.title)}</dd>
+          </div>
+          <div>
+            <dt>Situacao do chamado</dt>
+            <dd>${escapeHtml(properties.status || "Aberto")}</dd>
+          </div>
+          <div>
+            <dt>Confirmantes</dt>
+            <dd>
+              ${escapeHtml(properties.reportConfirmersCount || REPORT_CONFIRMERS.length)}
+              pessoas${confirmers ? ` (${escapeHtml(confirmers)})` : ""}
+            </dd>
+          </div>
+        </dl>
+        ${imageMarkup}
+      </section>
     `;
   }
 

@@ -10,18 +10,18 @@ export const TREE_MODEL_ASSET_URL = new URL("../../assets/tree.gltf", import.met
 export const VISUALIZATION_MODES = [
   {
     id: "base",
-    label: "Visao base",
-    helper: "Cena espacial limpa para leitura de massa, vegetacao e volumetria do campus.",
+    label: "Base",
+    helper: "Mapa limpo do campus.",
   },
   {
     id: "occurrences",
     label: "Ocorrencias",
-    helper: "Pins priorizados sobre o basemap para operacao e inspeccao rapida.",
+    helper: "Pins ativos para inspecao rapida.",
   },
   {
     id: "analytics",
-    label: "Analitica / Heatmap",
-    helper: "Leitura de densidade com heatmap geral ou por categoria filtrada.",
+    label: "Heatmap",
+    helper: "Densidade geral ou por categoria.",
   },
 ];
 
