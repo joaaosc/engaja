@@ -339,7 +339,6 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
   const reportFloorSelect = document.getElementById("report-floor-select");
   const reportEnvironmentSelect = document.getElementById("report-environment-select");
   const reportProblemSelect = document.getElementById("report-problem-select");
-  const reportStatusSelect = document.getElementById("report-status-select");
   const reportImageInput = document.getElementById("report-image-input");
   const reportImageName = document.getElementById("report-image-name");
   const pinReportButton = document.getElementById("pin-report-button");
@@ -810,7 +809,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     state.isReportPlacementMode = false;
     state.pendingReportDraft = null;
     pinReportButton.disabled = false;
-    pinReportButton.textContent = "Pinar no mapa";
+    pinReportButton.textContent = "Reportar";
     pinReportButton.classList.remove("is-placing");
     pinToggleButton.textContent = "Reportar";
     updateVisualizationHelper();
@@ -827,7 +826,7 @@ import { reportRecordToMarkingFeature } from "./features/reports/report-marking-
     const block = getControlValue(reportBlockSelect);
     const environment = getControlValue(reportEnvironmentSelect);
     const problem = getControlValue(reportProblemSelect);
-    const status = getControlValue(reportStatusSelect);
+    const status = "Aberto";
     const location = [
       getControlValue(reportBuildingSelect),
       `Bloco ${block}`,
