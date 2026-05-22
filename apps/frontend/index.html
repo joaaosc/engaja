@@ -12,132 +12,178 @@
   </head>
   <body>
     <div class="page-shell">
-      <header class="panel hero" data-reveal>
-        <div class="hero__content">
-          <p class="eyebrow">Engaja / gestao de infraestrutura</p>
-          <h1>Painel administrativo do campus</h1>
-          <p class="lead">
-            Leitura executiva para priorizar ocorrencias, distribuir equipes e acompanhar os pontos
-            com maior pressao territorial na Cidade Universitaria da UFRJ.
-          </p>
-
-          <div class="hero-callout">
-            <span class="hero-callout__label">Leitura da semana</span>
-            <strong>CT, RU e eixo hospitalar concentram a maior pressao operacional.</strong>
-            <p>
-              O foco atual e reduzir a fila critica, estabilizar pontos recorrentes e acelerar
-              respostas em infraestrutura e iluminacao.
-            </p>
-          </div>
-        </div>
-
-        <div class="hero__aside">
-          <div id="snapshot-chips" class="chip-row" aria-label="Contexto do painel"></div>
-
-          <section class="workflow-card" aria-labelledby="workflow-title">
-            <div class="section-heading section-heading--compact">
-              <div>
-                <p class="kicker">Carteira operacional</p>
-                <h2 id="workflow-title">Status de tratamento</h2>
-              </div>
-              <span class="section-note">visao consolidada</span>
-            </div>
-
-            <div id="status-breakdown" class="status-breakdown"></div>
-
-            <p class="workflow-footnote">
-              Ordenacao sugerida por criticidade, recorrencia e impacto sobre circulacao,
-              iluminacao e acessibilidade.
-            </p>
-          </section>
-        </div>
-      </header>
-
-      <section id="metric-grid" class="metric-grid" aria-label="Indicadores principais"></section>
-
-      <section class="main-grid">
-        <article class="panel chart-panel" data-reveal aria-labelledby="category-chart-title">
-          <div class="section-heading">
-            <div>
-              <p class="kicker">Distribuicao</p>
-              <h2 id="category-chart-title">Frentes por categoria</h2>
-            </div>
-            <span class="section-note">janela consolidada de 90 dias</span>
-          </div>
-
-          <div id="category-chart" class="category-chart"></div>
-        </article>
-
-        <article class="panel territory-panel" data-reveal aria-labelledby="territory-title">
-          <div class="section-heading">
-            <div>
-              <p class="kicker">Leitura territorial</p>
-              <h2 id="territory-title">Predios e areas criticas do campus</h2>
-            </div>
-            <span class="section-note">grafico interativo por predio, frente e estagio</span>
-          </div>
-
-          <div class="territory-layout">
-            <div class="territory-chart-card">
-              <div class="territory-chart-frame">
-                <div id="territory-center" class="territory-center" aria-hidden="true">
-                  <strong id="territory-center-value"></strong>
-                  <span id="territory-center-unit"></span>
-                  <p id="territory-center-caption"></p>
-                </div>
-
-                <svg
-                  id="territory-chart"
-                  class="territory-chart"
-                  viewBox="0 0 680 520"
-                  role="img"
-                  aria-labelledby="territory-chart-title territory-chart-desc"
-                >
-                  <title id="territory-chart-title">Leitura territorial por predio, area e estagio</title>
-                  <desc id="territory-chart-desc">
-                    Grafico radial interativo que organiza a pressao operacional por predio, frente
-                    e estagio de resposta.
-                  </desc>
-                </svg>
-              </div>
-
-              <div id="territory-legend" class="territory-legend" aria-label="Legenda territorial"></div>
-            </div>
-
-            <div class="territory-sidebar">
-              <section id="territory-focus" class="territory-focus" aria-live="polite"></section>
-              <div id="critical-area-list" class="critical-area-list"></div>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="panel urgent-panel" data-reveal aria-labelledby="urgent-title">
+      <section class="panel reports-panel" data-reveal aria-labelledby="reports-title">
         <div class="section-heading">
           <div>
-            <p class="kicker">Fila priorizada</p>
-            <h2 id="urgent-title">Problemas mais urgentes</h2>
+            <p class="kicker">Reports existentes</p>
+            <h1 id="reports-title">Tabela consolidada de reports</h1>
           </div>
-          <span class="section-note">ordenacao por impacto operacional</span>
         </div>
 
-        <div class="urgent-table-wrapper">
-          <table class="urgent-table">
+        <div class="reports-table-wrapper">
+          <table class="reports-table">
             <thead>
               <tr>
-                <th scope="col">Prioridade</th>
-                <th scope="col">Frente critica</th>
+                <th scope="col">ID</th>
+                <th scope="col">Localizacao</th>
                 <th scope="col">Status</th>
-                <th scope="col">Resposta</th>
+                <th scope="col">Data do report</th>
+                <th scope="col">Solicitantes</th>
               </tr>
             </thead>
-            <tbody id="urgent-table-body"></tbody>
+            <tbody id="reports-table-body">
+              <tr>
+                <td colspan="5" class="reports-table__empty">Carregando reports...</td>
+              </tr>
+            </tbody>
           </table>
         </div>
+
+        <p id="reports-summary" class="section-note reports-summary" aria-live="polite">
+          Buscando reports persistidos...
+        </p>
       </section>
 
-      <footer class="page-footer" data-reveal>
-        <p>Demo estatica com dados mockados para apresentacao institucional e leitura executiva.</p>
+      <section id="dashboard-details" hidden>
+        <header class="panel hero" data-reveal>
+          <div class="hero__content">
+            <p class="eyebrow">Engaja / gestao de infraestrutura</p>
+            <h2>Painel administrativo do campus</h2>
+            <p class="lead">
+              Leitura executiva para priorizar ocorrencias, distribuir equipes e acompanhar os
+              pontos com maior pressao territorial na Cidade Universitaria da UFRJ.
+            </p>
+
+            <div class="hero-callout">
+              <span class="hero-callout__label">Leitura da semana</span>
+              <strong>CT, RU e eixo hospitalar concentram a maior pressao operacional.</strong>
+              <p>
+                O foco atual e reduzir a fila critica, estabilizar pontos recorrentes e acelerar
+                respostas em infraestrutura e iluminacao.
+              </p>
+            </div>
+          </div>
+
+          <div class="hero__aside">
+            <div id="snapshot-chips" class="chip-row" aria-label="Contexto do painel"></div>
+
+            <section class="workflow-card" aria-labelledby="workflow-title">
+              <div class="section-heading section-heading--compact">
+                <div>
+                  <p class="kicker">Carteira operacional</p>
+                  <h3 id="workflow-title">Status de tratamento</h3>
+                </div>
+                <span class="section-note">visao consolidada</span>
+              </div>
+
+              <div id="status-breakdown" class="status-breakdown"></div>
+
+              <p class="workflow-footnote">
+                Ordenacao sugerida por criticidade, recorrencia e impacto sobre circulacao,
+                iluminacao e acessibilidade.
+              </p>
+            </section>
+          </div>
+        </header>
+
+        <section id="metric-grid" class="metric-grid" aria-label="Indicadores principais"></section>
+
+        <section class="main-grid">
+          <article class="panel chart-panel" data-reveal aria-labelledby="category-chart-title">
+            <div class="section-heading">
+              <div>
+                <p class="kicker">Distribuicao</p>
+                <h2 id="category-chart-title">Frentes por categoria</h2>
+              </div>
+              <span class="section-note">janela consolidada de 90 dias</span>
+            </div>
+
+            <div id="category-chart" class="category-chart"></div>
+          </article>
+
+          <article class="panel territory-panel" data-reveal aria-labelledby="territory-title">
+            <div class="section-heading">
+              <div>
+                <p class="kicker">Leitura territorial</p>
+                <h2 id="territory-title">Predios e areas criticas do campus</h2>
+              </div>
+              <span class="section-note">grafico interativo por predio, frente e estagio</span>
+            </div>
+
+            <div class="territory-layout">
+              <div class="territory-chart-card">
+                <div class="territory-chart-frame">
+                  <div id="territory-center" class="territory-center" aria-hidden="true">
+                    <strong id="territory-center-value"></strong>
+                    <span id="territory-center-unit"></span>
+                    <p id="territory-center-caption"></p>
+                  </div>
+
+                  <svg
+                    id="territory-chart"
+                    class="territory-chart"
+                    viewBox="0 0 680 520"
+                    role="img"
+                    aria-labelledby="territory-chart-title territory-chart-desc"
+                  >
+                    <title id="territory-chart-title">Leitura territorial por predio, area e estagio</title>
+                    <desc id="territory-chart-desc">
+                      Grafico radial interativo que organiza a pressao operacional por predio,
+                      frente e estagio de resposta.
+                    </desc>
+                  </svg>
+                </div>
+
+                <div id="territory-legend" class="territory-legend" aria-label="Legenda territorial"></div>
+              </div>
+
+              <div class="territory-sidebar">
+                <section id="territory-focus" class="territory-focus" aria-live="polite"></section>
+                <div id="critical-area-list" class="critical-area-list"></div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel urgent-panel" data-reveal aria-labelledby="urgent-title">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">Fila priorizada</p>
+              <h2 id="urgent-title">Problemas mais urgentes</h2>
+            </div>
+            <span class="section-note">ordenacao por impacto operacional</span>
+          </div>
+
+          <div class="urgent-table-wrapper">
+            <table class="urgent-table">
+              <thead>
+                <tr>
+                  <th scope="col">Prioridade</th>
+                  <th scope="col">Frente critica</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Resposta</th>
+                </tr>
+              </thead>
+              <tbody id="urgent-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <footer class="page-footer" data-reveal>
+          <p>Demo estatica com dados mockados para apresentacao institucional e leitura executiva.</p>
+        </footer>
+      </section>
+
+      <footer class="page-footer page-footer--centered" data-reveal>
+        <button
+          id="dashboard-details-toggle"
+          class="toggle-button"
+          type="button"
+          aria-controls="dashboard-details"
+          aria-expanded="false"
+        >
+          Dashboard
+        </button>
       </footer>
     </div>
 

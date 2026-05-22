@@ -461,7 +461,346 @@ const dashboardData = {
 
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 
-renderDashboard(dashboardData);
+const REPORTS_API_URL = resolveReportsApiUrl();
+const REPORTS_SEED_URL = "../../packages/reports-domain/seeds/reports.seed.geojson";
+const LOCAL_REPORTS_STORAGE_KEY = "engaja.reports.local";
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => bootstrapDashboard(), {
+    once: true,
+  });
+} else {
+  bootstrapDashboard();
+}
+
+async function bootstrapDashboard() {
+  initDashboardDetailsToggle();
+  renderDashboard(dashboardData);
+  renderReportsTableState("Carregando reports persistidos...");
+
+  try {
+    const reports = await loadReports();
+    renderReportsTable(reports);
+  } catch (error) {
+    console.warn("Nao foi possivel carregar os reports para a tabela.", error);
+    renderReportsTableState("Nao foi possivel carregar os reports.", true);
+  }
+}
+
+function initDashboardDetailsToggle() {
+  const toggleButton = document.getElementById("dashboard-details-toggle");
+  const detailsSection = document.getElementById("dashboard-details");
+
+  if (!toggleButton || !detailsSection) {
+    return;
+  }
+
+  const updateToggle = (isVisible) => {
+    detailsSection.hidden = !isVisible;
+    toggleButton.setAttribute("aria-expanded", String(isVisible));
+    toggleButton.textContent = "Dashboard";
+  };
+
+  updateToggle(false);
+
+  toggleButton.addEventListener("click", () => {
+    updateToggle(detailsSection.hidden);
+  });
+}
+
+async function loadReports() {
+  const [apiReports, localReports, seedReports] = await Promise.all([
+    loadReportsFromApi(),
+    Promise.resolve(loadReportsFromLocalStorage()),
+    loadReportsFromSeed(),
+  ]);
+
+  return dedupeReports([...apiReports, ...localReports, ...seedReports]).sort(
+    sortReportsByRecencyDesc,
+  );
+}
+
+async function loadReportsFromApi() {
+  try {
+    const response = await fetch(REPORTS_API_URL, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    return normalizeReportCollection(payload?.data);
+  } catch {
+    return [];
+  }
+}
+
+function resolveReportsApiUrl() {
+  const location = globalThis.location;
+
+  if (!location || !["http:", "https:"].includes(location.protocol)) {
+    return "http://127.0.0.1:3001/api/reports";
+  }
+
+  const apiUrl = new URL("/api/reports", location.origin);
+  apiUrl.port = "3001";
+  return apiUrl.toString();
+}
+
+async function loadReportsFromSeed() {
+  try {
+    const response = await fetch(REPORTS_SEED_URL, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+    return normalizeReportCollection(payload?.features);
+  } catch {
+    return [];
+  }
+}
+
+function loadReportsFromLocalStorage() {
+  try {
+    const storage = globalThis.localStorage;
+
+    if (!storage) {
+      return [];
+    }
+
+    const rawReports = storage.getItem(LOCAL_REPORTS_STORAGE_KEY);
+
+    if (!rawReports) {
+      return [];
+    }
+
+    const parsedReports = JSON.parse(rawReports);
+    return normalizeReportCollection(parsedReports);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeReportCollection(collection) {
+  if (!Array.isArray(collection)) {
+    return [];
+  }
+
+  return collection.map((entry) => normalizeReportRecord(entry)).filter(Boolean);
+}
+
+function normalizeReportRecord(entry) {
+  const source = entry?.properties && entry?.geometry ? entry.properties : entry;
+
+  if (!source) {
+    return null;
+  }
+
+  const reportedAt = normalizeDateString(source.reportedAt ?? source.createdAt ?? source.updatedAt);
+  const createdAt = normalizeTimestampString(source.createdAt ?? `${reportedAt}T00:00:00.000Z`);
+  const updatedAt = normalizeTimestampString(source.updatedAt ?? createdAt);
+  const confirmersText = String(source.reportConfirmers ?? "").trim();
+  const confirmerCount = Number(source.reportConfirmersCount);
+
+  return {
+    id: String(source.id ?? cryptoRandomId()),
+    title: String(source.title ?? "").trim(),
+    categoryId: String(source.categoryId ?? source.category ?? "").trim(),
+    categoryLabel: String(source.categoryLabel ?? source.category ?? "").trim(),
+    categoryColor: String(source.categoryColor ?? "").trim(),
+    description: String(source.description ?? "").trim(),
+    locationName: String(source.locationName ?? source.location ?? "").trim(),
+    status: String(source.status ?? "Registrado").trim() || "Registrado",
+    severity: String(source.severity ?? "Media").trim() || "Media",
+    latitude: Number(source.latitude),
+    longitude: Number(source.longitude),
+    reportedAt,
+    createdAt,
+    updatedAt,
+    reportBuilding: String(source.reportBuilding ?? "").trim(),
+    reportBlock: String(source.reportBlock ?? "").trim(),
+    reportFloor: String(source.reportFloor ?? "").trim(),
+    reportEnvironment: String(source.reportEnvironment ?? "").trim(),
+    reportProblem: String(source.reportProblem ?? "").trim(),
+    reportImageDataUrl: String(source.reportImageDataUrl ?? ""),
+    reportImageName: String(source.reportImageName ?? "").trim(),
+    reportConfirmers: confirmersText,
+    reportConfirmersCount: Number.isFinite(confirmerCount)
+      ? confirmerCount
+      : inferConfirmersCount(confirmersText),
+  };
+}
+
+function dedupeReports(reports) {
+  const seenIds = new Set();
+  const uniqueReports = [];
+
+  reports.forEach((report) => {
+    if (!report || seenIds.has(report.id)) {
+      return;
+    }
+
+    seenIds.add(report.id);
+    uniqueReports.push(report);
+  });
+
+  return uniqueReports;
+}
+
+function sortReportsByRecencyDesc(a, b) {
+  return `${b.reportedAt}${b.createdAt}`.localeCompare(`${a.reportedAt}${a.createdAt}`);
+}
+
+function renderReportsTableState(message, isError = false) {
+  const tbody = document.getElementById("reports-table-body");
+  const summary = document.getElementById("reports-summary");
+
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="reports-table__empty">${escapeHtml(message)}</td>
+      </tr>
+    `;
+  }
+
+  if (summary) {
+    summary.textContent = message;
+    summary.classList.toggle("reports-summary--error", isError);
+  }
+}
+
+function renderReportsTable(reports) {
+  const tbody = document.getElementById("reports-table-body");
+  const summary = document.getElementById("reports-summary");
+
+  if (!tbody) {
+    return;
+  }
+
+  if (!reports.length) {
+    renderReportsTableState("Nenhum report encontrado.");
+    return;
+  }
+
+  tbody.innerHTML = reports
+    .map(
+      (report) => `
+        <tr>
+          <td>
+            <span class="report-id">${escapeHtml(formatShortReportId(report.id))}</span>
+          </td>
+          <td>
+            <div class="report-location">
+              <strong class="report-location__title">
+                ${escapeHtml(report.locationName || "Local nao informado")}
+              </strong>
+              <span class="report-location__line">
+                Predio: ${escapeHtml(report.reportBuilding || "Nao informado")}
+              </span>
+              <span class="report-location__line">
+                Bloco: ${escapeHtml(report.reportBlock || "Nao informado")}
+              </span>
+              <span class="report-location__line">
+                Andar: ${escapeHtml(report.reportFloor || "Nao informado")}
+              </span>
+              <span class="report-location__line">
+                Ambiente: ${escapeHtml(report.reportEnvironment || "Nao informado")}
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="report-status">${escapeHtml(report.status)}</span>
+          </td>
+          <td>${escapeHtml(formatReportDate(report.reportedAt))}</td>
+          <td>
+            <span class="report-count">
+              ${numberFormatter.format(mockSolicitantsCount(report))}
+            </span>
+          </td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  if (summary) {
+    summary.textContent = `${numberFormatter.format(reports.length)} reports carregados.`;
+    summary.classList.remove("reports-summary--error");
+  }
+}
+
+function inferConfirmersCount(confirmersText) {
+  if (!confirmersText) {
+    return 0;
+  }
+
+  return confirmersText
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean).length;
+}
+
+function mockSolicitantsCount(report) {
+  return 1 + (hashString(`${report.id}|${report.reportedAt}|${report.status}`) % 9);
+}
+
+function formatShortReportId(value) {
+  return `#${hashString(String(value ?? ""))}`;
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  const text = String(value ?? "");
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return Math.abs(hash % 1000000)
+    .toString()
+    .padStart(6, "0");
+}
+
+function normalizeDateString(value) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return text.slice(0, 10);
+}
+
+function normalizeTimestampString(value) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`;
+  }
+
+  return text;
+}
+
+function formatReportDate(value) {
+  const normalized = normalizeDateString(value);
+  const [year, month, day] = normalized.split("-");
+
+  if (!year || !month || !day) {
+    return normalized;
+  }
+
+  return `${day}/${month}/${year}`;
+}
 
 function renderDashboard(data) {
   renderSnapshot(data.snapshot);
@@ -476,6 +815,10 @@ function renderDashboard(data) {
 function renderSnapshot(snapshot) {
   const container = document.getElementById("snapshot-chips");
 
+  if (!container) {
+    return;
+  }
+
   container.innerHTML = snapshot
     .map(
       (item) =>
@@ -486,6 +829,10 @@ function renderSnapshot(snapshot) {
 
 function renderStatuses(statuses) {
   const container = document.getElementById("status-breakdown");
+
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = statuses
     .map(
@@ -501,6 +848,10 @@ function renderStatuses(statuses) {
 
 function renderMetrics(metrics) {
   const container = document.getElementById("metric-grid");
+
+  if (!container) {
+    return;
+  }
 
   container.innerHTML = metrics
     .map(
@@ -520,6 +871,10 @@ function renderMetrics(metrics) {
 
 function renderCategoryChart(categories) {
   const container = document.getElementById("category-chart");
+  if (!container) {
+    return;
+  }
+
   const maxTotal = Math.max(...categories.map((category) => category.total));
 
   container.innerHTML = categories
@@ -565,6 +920,18 @@ function renderTerritory(areas) {
   const centerUnit = document.getElementById("territory-center-unit");
   const centerCaption = document.getElementById("territory-center-caption");
 
+  if (
+    !chart ||
+    !legend ||
+    !focus ||
+    !areaList ||
+    !centerValue ||
+    !centerUnit ||
+    !centerCaption
+  ) {
+    return;
+  }
+
   const geometry = {
     width: 680,
     height: 520,
@@ -585,8 +952,8 @@ function renderTerritory(areas) {
   const totalActive = areas.reduce((sum, area) => sum + area.active, 0);
   const totalCritical = areas.reduce((sum, area) => sum + area.critical, 0);
   const topArea = areas.reduce((current, area) => (area.active > current.active ? area : current), areas[0]);
-  const allCategories = areas.flatMap((area) => area.categories);
-  const allStages = allCategories.flatMap((category) => category.stages);
+  const allCategories = areas.reduce((acc, area) => acc.concat(area.categories), []);
+  const allStages = allCategories.reduce((acc, category) => acc.concat(category.stages), []);
   const maxByLevel = {
     area: Math.max(...areas.map((area) => area.active)),
     category: Math.max(...allCategories.map((category) => category.value)),
@@ -966,6 +1333,10 @@ function renderTerritory(areas) {
 function renderUrgentReports(reports) {
   const tbody = document.getElementById("urgent-table-body");
 
+  if (!tbody) {
+    return;
+  }
+
   tbody.innerHTML = reports
     .map(
       (report) => `
@@ -986,9 +1357,7 @@ function renderUrgentReports(reports) {
           </td>
           <td>
             <div class="table-response">
-              <span class="table-badge table-badge--${slugify(report.status)}">
-                ${escapeHtml(report.status)}
-              </span>
+              <span class="table-status">${escapeHtml(report.status)}</span>
               <span class="table-impact">${escapeHtml(report.impact)}</span>
             </div>
           </td>
@@ -1145,9 +1514,9 @@ function slugify(value) {
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }

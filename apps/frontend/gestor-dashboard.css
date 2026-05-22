@@ -1,0 +1,506 @@
+:root {
+  color-scheme: light;
+  --bg: #f2f2ef;
+  --paper: #fbfbfa;
+  --ink: #202020;
+  --muted: #606060;
+  --line: #2b2b2b;
+  --line-soft: #b7b7b2;
+  --cell: #ffffff;
+  --cell-alt: #f6f6f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Avenir Next", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+  cursor: pointer;
+}
+
+h1,
+h2,
+p,
+figure,
+dl,
+dd {
+  margin: 0;
+}
+
+.dashboard-shell {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 24px auto;
+}
+
+.page-frame {
+  min-height: calc(100vh - 48px);
+  border: 2px solid var(--line);
+  background: var(--paper);
+}
+
+.product-title {
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.product-title h1,
+.detail-header h1 {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manager-header {
+  position: relative;
+  display: grid;
+  grid-template-rows: repeat(2, 72px);
+  border-bottom: 1px dashed var(--line);
+}
+
+.manager-header__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 34px;
+  border-bottom: 1px solid var(--line-soft);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.38rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.manager-header__row:last-of-type {
+  border-bottom: 0;
+}
+
+.account-menu {
+  position: absolute;
+  top: 16px;
+  right: 28px;
+  width: 230px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.account-menu__button {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--cell);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+  padding: 0 14px;
+}
+
+.account-menu__button::after {
+  content: "v";
+  float: right;
+}
+
+.account-menu__panel {
+  display: grid;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: var(--cell);
+}
+
+.account-menu__panel[hidden] {
+  display: none;
+}
+
+.account-menu__panel button {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--cell);
+  text-align: left;
+  padding: 0 14px;
+  letter-spacing: 0.04em;
+}
+
+.account-menu__panel button:last-child {
+  border-bottom: 0;
+}
+
+.campus-map {
+  position: relative;
+  min-height: 342px;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-canvas {
+  position: relative;
+  height: 342px;
+  overflow: hidden;
+  background:
+    linear-gradient(#ededeb 1px, transparent 1px),
+    linear-gradient(90deg, #ededeb 1px, transparent 1px),
+    var(--cell);
+  background-size: 44px 44px;
+}
+
+.map-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(0.05) contrast(1.05);
+  mix-blend-mode: multiply;
+}
+
+.map-road {
+  fill: none;
+  stroke: #777;
+  stroke-width: 18;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+
+.map-road--light {
+  stroke-width: 10;
+  opacity: 0.5;
+}
+
+.map-building,
+.map-area {
+  fill: #efefed;
+  stroke: #303030;
+  stroke-width: 3;
+}
+
+.map-area {
+  fill: #e6e6e3;
+  stroke-dasharray: 6 7;
+}
+
+.map-pin {
+  fill: #222;
+  stroke: #fff;
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.map-pin:hover {
+  fill: #000;
+}
+
+.map-tools {
+  position: absolute;
+  right: 44px;
+  bottom: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, 42px);
+  border: 1px solid var(--line);
+  background: var(--cell);
+}
+
+.map-tools button {
+  height: 38px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: var(--cell);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.map-tools button:last-child {
+  border-right: 0;
+}
+
+.reports-section h2 {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.25rem;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.reports-list {
+  min-height: 330px;
+}
+
+.report-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  width: 100%;
+  min-height: 108px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--cell);
+  padding: 0;
+  text-align: left;
+}
+
+.report-row:hover,
+.report-row:focus-visible {
+  background: var(--cell-alt);
+  outline: 2px solid #111;
+  outline-offset: -2px;
+}
+
+.report-row__content {
+  padding: 14px 18px;
+}
+
+.report-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.report-row__title strong {
+  font-size: 1.05rem;
+  text-decoration: underline;
+  text-transform: uppercase;
+}
+
+.report-row__title span,
+.report-row__meta {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.report-row__meta {
+  display: grid;
+  gap: 4px;
+  line-height: 1.35;
+}
+
+.report-row__image {
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--line);
+  background: var(--cell-alt);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.55rem;
+  letter-spacing: 0.14em;
+}
+
+.detail-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  min-height: 86px;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--line);
+  gap: 20px;
+}
+
+.detail-header h1 {
+  text-align: left;
+}
+
+.detail-header strong {
+  justify-self: center;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.45rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-header .text-button {
+  justify-self: end;
+}
+
+.text-button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  background: var(--cell);
+  font-family: "Courier New", Courier, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.report-detail {
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+  padding: 46px 44px 56px;
+}
+
+.report-detail h2 {
+  width: min(900px, 100%);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-fields {
+  display: grid;
+  gap: 10px;
+  width: min(900px, 100%);
+}
+
+.detail-fields div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.detail-fields dt {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.detail-fields dd {
+  font-size: 1.08rem;
+  line-height: 1.35;
+}
+
+.detail-image {
+  display: grid;
+  place-items: center;
+  width: min(580px, 100%);
+  aspect-ratio: 16 / 9;
+  border: 2px solid var(--line);
+  background: var(--cell-alt);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 2rem;
+  letter-spacing: 0.16em;
+}
+
+.status-form {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 360px);
+  gap: 12px 16px;
+  align-items: center;
+  width: min(760px, 100%);
+}
+
+.status-form label {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.status-form select {
+  height: 48px;
+  border: 1px solid var(--line);
+  background: var(--cell);
+  padding: 0 12px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.status-form button {
+  grid-column: 1 / -1;
+  min-height: 58px;
+  border: 2px solid var(--line);
+  background: var(--cell);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.status-feedback {
+  min-height: 20px;
+  color: var(--muted);
+  font-size: 0.96rem;
+}
+
+@media (max-width: 760px) {
+  .dashboard-shell {
+    width: min(100vw - 18px, 1180px);
+    margin: 9px auto;
+  }
+
+  .page-frame {
+    min-height: calc(100vh - 18px);
+  }
+
+  .product-title h1,
+  .detail-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .manager-header {
+    grid-template-rows: repeat(2, 58px) auto;
+  }
+
+  .manager-header__row {
+    padding: 0 16px;
+    font-size: 1rem;
+  }
+
+  .account-menu {
+    position: static;
+    width: auto;
+    margin: 0 16px 16px;
+  }
+
+  .campus-map,
+  .map-canvas {
+    min-height: 300px;
+    height: 300px;
+  }
+
+  .report-row {
+    grid-template-columns: 1fr;
+  }
+
+  .report-row__image {
+    min-height: 76px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .detail-header {
+    grid-template-columns: 1fr;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+
+  .detail-header strong,
+  .detail-header .text-button {
+    justify-self: start;
+  }
+
+  .report-detail {
+    padding: 28px 16px 36px;
+  }
+
+  .report-detail h2 {
+    font-size: 1.35rem;
+  }
+
+  .detail-fields div,
+  .status-form {
+    grid-template-columns: 1fr;
+  }
+}

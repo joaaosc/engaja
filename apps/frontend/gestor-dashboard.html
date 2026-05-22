@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reporta UFRJ | Dashboard do gestor</title>
+    <meta
+      name="description"
+      content="Modelo formal de dashboard para gestor, com mapa, reports recentes e detalhe de report."
+    />
+    <link rel="stylesheet" href="./gestor-dashboard.css" />
+  </head>
+  <body>
+    <main class="dashboard-shell" aria-live="polite">
+      <section id="manager-view" class="page-frame" aria-labelledby="manager-title">
+        <header class="product-title">
+          <h1 id="manager-title">REPORTA UFRJ - Ilha do Fundao</h1>
+        </header>
+
+        <section class="manager-header" aria-label="Dados do gestor">
+          <div class="manager-header__row">
+            <strong>GESTOR:</strong>
+            <span>AGNALDO</span>
+          </div>
+          <div class="manager-header__row">
+            <strong>CAMPUS:</strong>
+            <span>cidade Universitaria - Prédio CT</span>
+          </div>
+
+          <nav class="account-menu" aria-label="Menu do gestor">
+            <button id="manager-menu-button" class="account-menu__button" type="button">
+              MENU
+            </button>
+            <div id="manager-menu" class="account-menu__panel">
+              <button type="button">EDITAR PERFIL</button>
+              <button type="button">ALTERAR SENHA</button>
+              <button type="button">NOTIFICACOES</button>
+              <button type="button">SAIR</button>
+            </div>
+          </nav>
+        </section>
+
+        <section class="campus-map" aria-label="Mapa esquematico do campus CT">
+          <div class="map-canvas">
+            <img
+              src="../../mapinha.jpg"
+              alt="Mapa do campus CT com marcações de reports"
+              class="map-image"
+            />
+          </div>
+
+          <div class="map-tools" aria-label="Controles de mapa">
+            <button type="button">+</button>
+            <button type="button">-</button>
+            <button type="button">Q</button>
+          </div>
+        </section>
+
+        <section class="reports-section" aria-labelledby="recent-reports-title">
+          <h2 id="recent-reports-title">REPORTES RECENTES</h2>
+          <div id="reports-list" class="reports-list"></div>
+        </section>
+      </section>
+
+      <section id="detail-view" class="page-frame detail-view" aria-labelledby="detail-title" hidden>
+        <header class="detail-header">
+          <h1>REPORTE</h1>
+          <strong>CAMPUS: CT</strong>
+          <button id="back-to-dashboard" class="text-button" type="button">VOLTAR</button>
+        </header>
+
+        <section class="report-detail">
+          <h2 id="detail-title"></h2>
+          <dl class="detail-fields">
+            <div>
+              <dt>REPORTANTE:</dt>
+              <dd id="detail-reporter"></dd>
+            </div>
+            <div>
+              <dt>LOCAL:</dt>
+              <dd id="detail-location"></dd>
+            </div>
+          </dl>
+
+          <figure class="detail-image">
+            <span>IMG</span>
+          </figure>
+
+          <form id="status-form" class="status-form">
+            <label for="status-select">SITUACAO:</label>
+            <select id="status-select" name="status">
+              <option>Em analise</option>
+              <option>Chamado aberto</option>
+              <option>Resolvido</option>
+              <option>Cancelado</option>
+            </select>
+            <button type="submit">ATUALIZAR SITUACAO</button>
+          </form>
+
+          <p id="status-feedback" class="status-feedback" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+
+    <script src="./gestor-dashboard.js"></script>
+  </body>
+</html>

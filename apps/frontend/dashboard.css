@@ -153,7 +153,8 @@ button {
   color: var(--accent-sky);
 }
 
-.hero h1 {
+.hero h1,
+.hero h2 {
   font-size: clamp(2.25rem, 4vw, 3.9rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
@@ -270,6 +271,199 @@ button {
   font-size: 0.8rem;
   font-weight: 700;
   text-align: right;
+}
+
+.reports-panel {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  margin-bottom: 18px;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+  backdrop-filter: none;
+}
+
+.reports-panel .section-heading {
+  margin-bottom: 8px;
+}
+
+.reports-panel h1 {
+  font-size: clamp(1.65rem, 3.2vw, 2.5rem);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+  max-width: 12ch;
+}
+
+.reports-summary {
+  margin-top: 2px;
+}
+
+.reports-summary--error {
+  color: var(--critical);
+}
+
+.toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  min-width: 240px;
+  padding: 0 24px;
+  border: 1px solid rgba(32, 65, 77, 0.14);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 235, 0.95)),
+    #ffffff;
+  color: var(--accent-navy);
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow:
+    0 14px 28px rgba(33, 51, 58, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.toggle-button:hover,
+.toggle-button:focus-visible {
+  border-color: rgba(32, 65, 77, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(240, 236, 225, 0.98)),
+    #ffffff;
+  box-shadow:
+    0 18px 34px rgba(33, 51, 58, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.report-status,
+.table-status {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.reports-table-wrapper {
+  overflow: auto;
+  border: 1px solid #b9c1c6;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.reports-table {
+  width: 100%;
+  min-width: 1040px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.reports-table thead th {
+  padding: 14px 18px;
+  border-bottom: 1px solid #b9c1c6;
+  border-right: 1px solid #d4d8db;
+  color: #313131;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  background: #f5f6f7;
+}
+
+.reports-table tbody td {
+  padding: 16px 18px;
+  border-bottom: 1px solid #d8d8d8;
+  border-right: 1px solid #e3e3e3;
+  vertical-align: top;
+  background: #ffffff;
+}
+
+.reports-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.reports-table tbody tr:hover {
+  background: #f7f7f7;
+}
+
+.reports-table th:nth-child(1),
+.reports-table td:nth-child(1) {
+  width: 120px;
+}
+
+.reports-table th:nth-child(2),
+.reports-table td:nth-child(2) {
+  width: 50%;
+}
+
+.reports-table th:nth-child(3),
+.reports-table td:nth-child(3) {
+  width: 160px;
+}
+
+.reports-table th:nth-child(4),
+.reports-table td:nth-child(4) {
+  width: 160px;
+}
+
+.reports-table th:nth-child(5),
+.reports-table td:nth-child(5) {
+  width: 140px;
+}
+
+.reports-table__empty {
+  padding: 26px 18px;
+  color: #666666;
+  text-align: center;
+}
+
+.report-id {
+  font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.report-location {
+  display: grid;
+  gap: 2px;
+  word-break: break-word;
+}
+
+.report-location__title {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.report-location__line {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #5f656b;
+}
+
+.report-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #c8c8c8;
+  border-radius: 2px;
+  background: #fafafa;
+  color: #222;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .status-breakdown {
@@ -888,6 +1082,11 @@ button {
   gap: 12px;
   padding: 0 4px;
   font-size: 0.88rem;
+}
+
+.page-footer--centered {
+  justify-content: center;
+  padding-top: 18px;
 }
 
 @keyframes reveal {
